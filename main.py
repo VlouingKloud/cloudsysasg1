@@ -4,15 +4,9 @@ from hashlib import shake_128
 
 from flask import Flask, request, abort, redirect, make_response
 
-# we use duckdb
-# the reason is that:
-#   1. embedded and analytical
-#   2. fast
-#   3. no need to do complex configuration
-#   4. and of course column storage
-#   5. etc.
 import duckdb
 
+# import all the constants
 from conf import *
 
 app = Flask(__name__)
@@ -44,6 +38,8 @@ class Shortner:
     """ This is the class to manage short urls
     """
     def __init__(self, filename = None):
+        """ if a filename is provided, persistent storage will be enabled.
+        """
         if filename:
             self.con = duckdb.connect(filename)
         else:
@@ -66,6 +62,8 @@ class Shortner:
         return short
 
     def get(self, short):
+        """ This is for get /:id
+        """
         result = self.con.sql("select original from urlpair where short = '{}'".format(short)).fetchall()
         if len(result) == 1:
             self.con.sql("UPDATE urlpair SET count = count + 1 WHERE short = '{}'".format(short))
@@ -76,6 +74,10 @@ class Shortner:
             raise Exception("got more than one results")
 
     def put(self, url, short):
+        """ This is for put /:id
+        When the given id is in the database, it will change the mapping to the new url
+        otherwise, it will return None
+        """
         result = self.con.sql("select original from urlpair where short = '{}'".format(short)).fetchall()
         if len(result) == 1:
             self.con.sql("UPDATE urlpair SET original = '{}', count = 0 WHERE short = '{}'".format(url, short))
@@ -86,6 +88,8 @@ class Shortner:
             raise Exception("got more than one results")
 
     def delete(self, short):
+        """ This is for delete /:id
+        """
         result = self.con.sql("select original from urlpair where short = '{}'".format(short)).fetchall()
         if len(result) == 1:
             self.con.sql("delete from urlpair where short = '{}'".format(short))
@@ -96,27 +100,38 @@ class Shortner:
             raise Exception("got more than one results")
 
     def clear(self):
+        """ this is for DELETE /, which will clear the table.
+        """
         self.con.sql("delete from urlpair")
         return True
 
     def getAllKeys(self):
+        """ This is for GET /, which will return all the short IDs.
+        """
         result = self.con.sql("select short from urlpair").fetchall()
+        # we need to flat the result.
         flat = [key for z in result for key in z]
         return " ".join(flat)
 
     def stat(self, n = None):
+        """ This is for GET /stat and GET /stat/n
+        """
         result = self.con.sql("select short, original, count from urlpair order by count desc;").fetchall()
         if n:
             result = result[:n]
         resp = " \n".join("{}=>{}: {}".format(i[0], i[1], i[2]) for i in result)
         return resp
 
+# init the Shortner
 shortner = Shortner()
 
+
+# GET /
 @app.get('/')
 def getIndex():
     return make_response(shortner.getAllKeys(), 200)
 
+# POST /
 @app.post('/')
 def postIndex():
     url = request.form['url']
@@ -128,12 +143,14 @@ def postIndex():
     except Exception:
         return make_response("error", 400)
 
+# DELETE /
 @app.delete('/')
 def deleteIndex():
     shortner.clear()
     abort(404)
 
 
+# GET /:id
 @app.get('/<id>')
 def getID(id):
     url = shortner.get(id)
@@ -142,6 +159,7 @@ def getID(id):
     else:
         abort(404)
 
+# PUT /:id
 @app.put('/<id>')
 def putID(id):
     try:
@@ -156,6 +174,7 @@ def putID(id):
     except Exception:
         return make_response("error", 400)
 
+# DELETE /:id
 @app.delete('/<id>')
 def deleteID(id):
     url = shortner.delete(id)
@@ -165,13 +184,16 @@ def deleteID(id):
     else:
         abort(404)
 
+# GET /stat
 @app.get('/stat')
 def getStat():
     return shortner.stat()
 
+# GET /stat/:n
 @app.get('/stat/<n>')
 def getNStat(n):
     return shortner.stat(int(n))
 
 if __name__ == '__main__':
+    # listen not only the localhost
     app.run(host="0.0.0.0", port = 12345)

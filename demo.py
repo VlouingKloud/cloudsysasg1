@@ -7,7 +7,7 @@ import string
 import urllib3
 
 http = urllib3.PoolManager()
-addr = "http://172.17.0.3:12345"
+addr = "http://127.0.0.1:12345"
 
 def genURLList(n = 100000):
     top_lvl = (".com", ".org", ".net", ".int", ".edu", ".gov", ".mil")
