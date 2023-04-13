@@ -7,9 +7,13 @@ import string
 import urllib3
 
 http = urllib3.PoolManager()
+
+# server address
 addr = "http://127.0.0.1:12345"
 
 def genURLList(n = 100000):
+    """ private functions to generate fake urls
+    """
     top_lvl = (".com", ".org", ".net", ".int", ".edu", ".gov", ".mil")
     snd_lvl = (".cn", ".nl", ".eu", ".at", ".ch", ".uk", "","","","","","","","")
     alphabet = string.ascii_letters + string.digits
@@ -26,6 +30,7 @@ def genURLList(n = 100000):
         res.append(temp)
     return res
 
+# a list of test routines
 def testGetID(id, expected = 200):
     r = http.request("GET", addr + "/" + id)
     assert(r.status == expected)
