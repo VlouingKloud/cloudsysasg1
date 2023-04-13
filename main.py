@@ -35,7 +35,8 @@ def check_url(url):
         r'localhost|'  # localhost...
         r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or IP
         r'(?::\d+)?'  # optional port
-        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        r'(?:/?|[/?]\S+)$', # case-insensitive
+          re.IGNORECASE)
     if regex.match(url):
         return True
     else:
