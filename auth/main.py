@@ -15,20 +15,20 @@ class UserMgr:
             self.con = duckdb.connect(filename)
         else:
             self.con = duckdb.connect()
-        self.con.sql("CREATE TABLE IF NOT EXISTS user(name varchar primary key, password varchar);")
+        self.con.sql("CREATE TABLE IF NOT EXISTS users(name varchar primary key, password varchar);")
 
     def create(self, username, password):
         """ create a new user
             return True if ok
             return False if there is duplicate
         """
-        sql = "SELECT COUNT(*) FROM user WHERE name='{}'".format(username)
+        sql = "SELECT COUNT(*) FROM users WHERE name='{}'".format(username)
         if self.con.sql(sql).fetchone()[0] > 0:
             return False
         password = password.encode('utf-8')
         hashed = bcrypt.hashpw(password, bcrypt.gensalt())
 
-        sql = "INSERT INTO user VALUES ('{}', '{}')".format(username, hashed.decode("utf-8"))
+        sql = "INSERT INTO users VALUES ('{}', '{}')".format(username, hashed.decode("utf-8"))
         self.con.sql(sql)
         return True
 
@@ -37,7 +37,7 @@ class UserMgr:
             return True if ok
             anyother cases will return False
         """
-        sql = "SELECT password FROM user WHERE name = '{}'".format(username)
+        sql = "SELECT password FROM users WHERE name = '{}'".format(username)
         result = self.con.sql(sql).fetchall()
         if len(result) != 1:
             return False
@@ -46,7 +46,7 @@ class UserMgr:
         new = new.encode("utf-8")
         hashed = bcrypt.hashpw(new, bcrypt.gensalt())
 
-        sql = "UPDATE user SET password = '{}' WHERE name = '{}'".format(username, hashed.decode("utf-8"))
+        sql = "UPDATE users SET password = '{}' WHERE name = '{}'".format(username, hashed.decode("utf-8"))
         self.con.sql(sql)
         return True
 
@@ -55,7 +55,7 @@ class UserMgr:
             return a jwt if ok
             otherwise will return False
         """
-        sql = "SELECT password FROM user WHERE name = '{}'".format(username)
+        sql = "SELECT password FROM users WHERE name = '{}'".format(username)
         result = self.con.sql(sql).fetchall()
         if len(result) != 1:
             return False
