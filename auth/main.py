@@ -115,10 +115,13 @@ def postLogin():
 
 @app.post("/users/auth")
 def postAuth():
-    token = request.form['jwt']
-    if jwt.verifyJWT(token):
-        return make_response("ok", 200)
-    else:
+    try:
+        token = request.form['jwt']
+        if jwt.verifyJWT(token):
+            return make_response("ok", 200)
+        else:
+            return make_response("forbidden", 403)
+    except Exception:
         return make_response("forbidden", 403)
 
 if __name__ == "__main__":
