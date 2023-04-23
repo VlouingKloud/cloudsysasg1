@@ -3,6 +3,8 @@ import re
 from hashlib import shake_128
 import urllib3
 from flask import Flask, request, abort, redirect, make_response
+import base64
+import json
 
 import duckdb
 
@@ -57,18 +59,18 @@ class Shortner:
         else:
             self.con = duckdb.connect()
         # an index will be created by setting primary key
-        self.con.sql("CREATE TABLE IF NOT EXISTS urlpair(short varchar primary key, original varchar, count bigint);")
+        self.con.sql("CREATE TABLE IF NOT EXISTS urlpair(short varchar primary key, original varchar, count bigint, user varchar);")
 
-    def add(self, url):
+    def add(self, url, user):
         """ This is for shortening a url (POST /)
             if there is a collision, we simply overwrite the previous one
         """
         short = _genShort(url)
-        result = self.con.sql("select original from urlpair where short = '{}'".format(short)).fetchall()
+        result = self.con.sql("select original from urlpair where short = '{}' and user = '{}'".format(short, user)).fetchall()
         if len(result) == 1:
-            self.con.sql("UPDATE urlpair SET original = '{}', count = 1 WHERE short = '{}'".format(url, short))
+            self.con.sql("UPDATE urlpair SET original = '{}', count = 1 WHERE short = '{}' and user = '{}'".format(url, short, user))
         elif len(result) == 0:
-            self.con.sql("INSERT INTO urlpair VALUES ('{}', '{}', 1)".format(short, url))
+            self.con.sql("INSERT INTO urlpair VALUES ('{}', '{}', 1, '{}')".format(short, url, user))
         else:
             raise Exception("got more than one results")
         return short
@@ -85,42 +87,42 @@ class Shortner:
         else:
             raise Exception("got more than one results")
 
-    def put(self, url, short):
+    def put(self, url, short, user):
         """ This is for put /:id
         When the given id is in the database, it will change the mapping to the new url
         otherwise, it will return None
         """
-        result = self.con.sql("select original from urlpair where short = '{}'".format(short)).fetchall()
+        result = self.con.sql("select original from urlpair where short = '{}' and user = '{}'".format(short, user)).fetchall()
         if len(result) == 1:
-            self.con.sql("UPDATE urlpair SET original = '{}', count = 0 WHERE short = '{}'".format(url, short))
+            self.con.sql("UPDATE urlpair SET original = '{}', count = 0 WHERE short = '{}' and user = '{}'".format(url, short, user))
             return url
         elif len(result) == 0:
             return None
         else:
             raise Exception("got more than one results")
 
-    def delete(self, short):
+    def delete(self, short, user):
         """ This is for delete /:id
         """
-        result = self.con.sql("select original from urlpair where short = '{}'".format(short)).fetchall()
+        result = self.con.sql("select original from urlpair where short = '{}' and user = '{}'".format(short, user)).fetchall()
         if len(result) == 1:
-            self.con.sql("delete from urlpair where short = '{}'".format(short))
+            self.con.sql("delete from urlpair where short = '{}' and user = '{}'".format(short, user))
             return result[0][0]
         elif len(result) == 0:
             return None
         else:
             raise Exception("got more than one results")
 
-    def clear(self):
+    def clear(self, user):
         """ this is for DELETE /, which will clear the table.
         """
-        self.con.sql("delete from urlpair")
+        self.con.sql("delete from urlpair where user = '{}'".format(user))
         return True
 
-    def getAllKeys(self):
+    def getAllKeys(self, user):
         """ This is for GET /, which will return all the short IDs.
         """
-        result = self.con.sql("select short from urlpair").fetchall()
+        result = self.con.sql("select short from urlpair where user = '{}'".format(user)).fetchall()
         # we need to flat the result.
         flat = [key for z in result for key in z]
         return " ".join(flat)
@@ -128,7 +130,7 @@ class Shortner:
     def stat(self, n = None):
         """ This is for GET /stat and GET /stat/n
         """
-        result = self.con.sql("select short, original, count from urlpair order by count desc;").fetchall()
+        result = self.con.sql("select short, original, count, user from urlpair order by count desc;").fetchall()
         if n:
             result = result[:n]
         resp = " \n".join("{}=>{}: {}".format(i[0], i[1], i[2]) for i in result)
@@ -137,6 +139,9 @@ class Shortner:
 # init the Shortner
 shortner = Shortner()
 
+# require_auth, this function will be used as
+# a decorator, and will decorate all the handlers 
+# which reuqire auth
 def require_auth(f):
     def inner(*args, **kwargs):
         token = request.headers.get('Authorization')
@@ -154,27 +159,42 @@ def require_auth(f):
             return make_response("forbidden", 403)
     return inner
 
+def get_user_from_token(token):
+    """ private function used get username from a token
+    """
+    if "Bearer " in token:
+        token = token.split(' ')[1]
+    enc_header, enc_payload, enc_sig = token.split(".")
+    payload = json.loads(base64.urlsafe_b64decode(enc_payload + '==').decode('utf-8'))
+    return payload['user']
+
 # GET /
 @app.get('/')
+@require_auth
 def getIndex():
-    return make_response(shortner.getAllKeys(), 200)
+    user = get_user_from_token(request.headers.get('Authorization'))
+    return make_response(shortner.getAllKeys(user), 200)
 
 # POST /
 @app.post('/')
+@require_auth
 def postIndex():
     url = request.form['url']
+    user = get_user_from_token(request.headers.get('Authorization'))
     if not check_url(url):
         return make_response("url nor valid", 400)
     try:
-        short = shortner.add(url)
+        short = shortner.add(url, user)
         return make_response(short, 200)
     except Exception:
         return make_response("error", 400)
 
 # DELETE /
 @app.delete('/')
+@require_auth
 def deleteIndex():
-    shortner.clear()
+    user = get_user_from_token(request.headers.get('Authorization'))
+    shortner.clear(user)
     abort(404)
 
 
@@ -189,12 +209,14 @@ def getID(id):
 
 # PUT /:id
 @app.put('/<id>')
+@require_auth
 def putID(id):
     try:
+        user = get_user_from_token(request.headers.get('Authorization'))
         url = request.form['url']
         if not check_url(url):
             return make_response("url nor valid", 400)
-        url = shortner.put(url, id)
+        url = shortner.put(url, id, user)
         if url:
             return make_response(url + "=> " + id, 200)
         else:
@@ -204,8 +226,10 @@ def putID(id):
 
 # DELETE /:id
 @app.delete('/<id>')
+@require_auth
 def deleteID(id):
-    url = shortner.delete(id)
+    user = get_user_from_token(request.headers.get('Authorization'))
+    url = shortner.delete(id, user)
     if url:
         resp = make_response(url, 204)
         return resp
@@ -214,7 +238,6 @@ def deleteID(id):
 
 # GET /stat
 @app.get('/stat')
-@require_auth
 def getStat():
     return shortner.stat()
 
