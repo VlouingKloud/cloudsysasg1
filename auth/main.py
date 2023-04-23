@@ -117,6 +117,8 @@ def postLogin():
 def getAuth():
     try:
         token = request.headers.get('Authorization')
+        if "Bearer " in token:
+            token = token.split(' ')[1]
         if jwt.verifyJWT(token):
             return make_response("ok", 200)
         else:

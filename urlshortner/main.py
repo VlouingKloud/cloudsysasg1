@@ -144,7 +144,7 @@ def require_auth(f):
             return make_response("forbidden", 403)
         http = urllib3.PoolManager()
         headers = {
-                'Authorization': 'Bearer ' + token,
+                'Authorization': token,
                 'Content-Type': 'application/json'
                 }
         r = http.request('GET', AUTH_URL, headers=headers)
