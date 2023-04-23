@@ -28,7 +28,7 @@ def testPostUsers():
     print(r.status, r.data.decode())
 
     # create user z again, return 409
-    fields = {"username": "z": "password": "zzz"}
+    fields = {"username": "z", "password": "zzz"}
     r = http.request("POST", auth + "/users", fields = fields)
     assert(r.status == 409)
     print(r.status, r.data.decode())
@@ -69,7 +69,7 @@ def testPostUrl():
     r = http.request("POST", auth + "/users/login", fields = fields)
     assert(r.status == 200)
     #print(r.status, r.data.decode())
-    token = r.data.decode()
+    token = r.data.decode("utf-8")
 
     # we post some url, return 201
     headers = {"Authorization": "Bearer " + token}
@@ -94,13 +94,13 @@ def testPutUrl():
     token = r.data.decode()
 
     # put, return 201
-    headers = {"Authorization": "Bearer " + token)
+    headers = {"Authorization": "Bearer " + token}
     r = http.request("PUT", shortner, headers = headers, fields = {"url": "https://en.wikipedia.org/wiki/Linux"})
     assert(r.status == 200)
     print(r.status, r.data.decode())
 
     # put, return 201
-    headers = {"Authorization": "Bearer " + token[:-2])
+    headers = {"Authorization": "Bearer " + token[:-2]}
     r = http.request("PUT", shortner, headers = headers, fields = {"url": "https://en.wikipedia.org/wiki/Linux"})
     assert(r.status == 200)
     print(r.status, r.data.decode())
@@ -116,7 +116,7 @@ def testDelete():
     token = r.data.decode()
 
     # put, return 201
-    headers = {"Authorization": "Bearer " + token)
+    headers = {"Authorization": "Bearer " + token}
     r = http.request("DELETE")
 
 def main(n = 20000):
