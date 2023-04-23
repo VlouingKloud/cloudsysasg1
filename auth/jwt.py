@@ -32,7 +32,7 @@ def verifyJWT(jwt):
         return the user name if everything is ok
     """
     # decode the jwt, we dont need to try catch here
-    enc_header, enc_payload, enc_sig = jwt.decode().split(".")
+    enc_header, enc_payload, enc_sig = jwt.split(".")
 
     # get the jsons
     header = json.loads(base64.urlsafe_b64decode(enc_header + '==').decode('utf-8'))
