@@ -23,7 +23,7 @@ def createJWT(user, period = 30 * 60):
     sig = hmac.new(KEY.encode('utf-8'), temp, hashlib.sha256).digest()
     enc_sig = base64.urlsafe_b64encode(sig).rstrip(b'=')
 
-    return temp + b"." + enc_sig
+    return (temp + b"." + enc_sig).decode("utf-8")
 
 def verifyJWT(jwt):
     """ verify if a JWT is valid,

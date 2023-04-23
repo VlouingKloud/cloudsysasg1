@@ -46,7 +46,7 @@ class UserMgr:
         new = new.encode("utf-8")
         hashed = bcrypt.hashpw(new, bcrypt.gensalt())
 
-        sql = "UPDATE users SET password = '{}' WHERE name = '{}'".format(username, hashed.decode("utf-8"))
+        sql = "UPDATE users SET password = '{}' WHERE name = '{}'".format(hashed.decode("utf-8"), username)
         self.con.sql(sql)
         return True
 
