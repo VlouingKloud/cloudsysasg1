@@ -113,8 +113,8 @@ def postLogin():
     except Exception:
         abort(400)
 
-@app.post("/users/auth")
-def postAuth():
+@app.get("/users/auth")
+def getAuth():
     try:
         token = request.headers.get('Authorization')
         if jwt.verifyJWT(token):
