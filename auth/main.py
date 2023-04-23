@@ -41,7 +41,7 @@ class UserMgr:
         result = self.con.sql(sql).fetchall()
         if len(result) != 1:
             return False
-        if not bcrypt.checkpw(old.encode("utf-8"), result[0][0]):
+        if not bcrypt.checkpw(old.encode("utf-8"), result[0][0].encode("utf-8")):
             return False
         new = new.encode("utf-8")
         hashed = bcrypt.hashpw(new, bcrypt.gensalt())
@@ -59,7 +59,7 @@ class UserMgr:
         result = self.con.sql(sql).fetchall()
         if len(result) != 1:
             return False
-        if not bcrypt.checkpw(password.encode("utf-8"), result[0][0]):
+        if not bcrypt.checkpw(password.encode("utf-8"), result[0][0].encode("utf-8")):
             return False
         return jwt.createJWT(username)
 
