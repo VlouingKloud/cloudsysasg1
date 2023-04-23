@@ -5,6 +5,7 @@ import urllib3
 from flask import Flask, request, abort, redirect, make_response
 import base64
 import json
+from functools import wraps
 
 import duckdb
 
@@ -59,16 +60,16 @@ class Shortner:
         else:
             self.con = duckdb.connect()
         # an index will be created by setting primary key
-        self.con.sql("CREATE TABLE IF NOT EXISTS urlpair(short varchar primary key, original varchar, count bigint, user varchar);")
+        self.con.sql("CREATE TABLE IF NOT EXISTS urlpair(short varchar primary key, original varchar, count bigint, username varchar);")
 
     def add(self, url, user):
         """ This is for shortening a url (POST /)
             if there is a collision, we simply overwrite the previous one
         """
         short = _genShort(url)
-        result = self.con.sql("select original from urlpair where short = '{}' and user = '{}'".format(short, user)).fetchall()
+        result = self.con.sql("select original from urlpair where short = '{}' and username = '{}'".format(short, user)).fetchall()
         if len(result) == 1:
-            self.con.sql("UPDATE urlpair SET original = '{}', count = 1 WHERE short = '{}' and user = '{}'".format(url, short, user))
+            self.con.sql("UPDATE urlpair SET original = '{}', count = 1 WHERE short = '{}' and username = '{}'".format(url, short, user))
         elif len(result) == 0:
             self.con.sql("INSERT INTO urlpair VALUES ('{}', '{}', 1, '{}')".format(short, url, user))
         else:
@@ -92,9 +93,9 @@ class Shortner:
         When the given id is in the database, it will change the mapping to the new url
         otherwise, it will return None
         """
-        result = self.con.sql("select original from urlpair where short = '{}' and user = '{}'".format(short, user)).fetchall()
+        result = self.con.sql("select original from urlpair where short = '{}' and username = '{}'".format(short, user)).fetchall()
         if len(result) == 1:
-            self.con.sql("UPDATE urlpair SET original = '{}', count = 0 WHERE short = '{}' and user = '{}'".format(url, short, user))
+            self.con.sql("UPDATE urlpair SET original = '{}', count = 0 WHERE short = '{}' and username = '{}'".format(url, short, user))
             return url
         elif len(result) == 0:
             return None
@@ -104,9 +105,9 @@ class Shortner:
     def delete(self, short, user):
         """ This is for delete /:id
         """
-        result = self.con.sql("select original from urlpair where short = '{}' and user = '{}'".format(short, user)).fetchall()
+        result = self.con.sql("select original from urlpair where short = '{}' and username = '{}'".format(short, user)).fetchall()
         if len(result) == 1:
-            self.con.sql("delete from urlpair where short = '{}' and user = '{}'".format(short, user))
+            self.con.sql("delete from urlpair where short = '{}' and username = '{}'".format(short, user))
             return result[0][0]
         elif len(result) == 0:
             return None
@@ -116,13 +117,13 @@ class Shortner:
     def clear(self, user):
         """ this is for DELETE /, which will clear the table.
         """
-        self.con.sql("delete from urlpair where user = '{}'".format(user))
+        self.con.sql("delete from urlpair where username = '{}'".format(user))
         return True
 
     def getAllKeys(self, user):
         """ This is for GET /, which will return all the short IDs.
         """
-        result = self.con.sql("select short from urlpair where user = '{}'".format(user)).fetchall()
+        result = self.con.sql("select short from urlpair where username = '{}'".format(user)).fetchall()
         # we need to flat the result.
         flat = [key for z in result for key in z]
         return " ".join(flat)
@@ -143,6 +144,7 @@ shortner = Shortner()
 # a decorator, and will decorate all the handlers 
 # which reuqire auth
 def require_auth(f):
+    @wraps(f)
     def inner(*args, **kwargs):
         token = request.headers.get('Authorization')
         if not token:
