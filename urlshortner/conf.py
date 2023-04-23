@@ -16,4 +16,4 @@ HASH_LEN = 4
 DBPATH = None
 
 ## auth url
-AUTH_URL = "http://10.19.0.8:12356/users/auth"
+AUTH_URL = "http://127.0.0.1:12356/users/auth"

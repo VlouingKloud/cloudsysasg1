@@ -187,7 +187,7 @@ def postIndex():
         return make_response("url nor valid", 400)
     try:
         short = shortner.add(url, user)
-        return make_response(short, 200)
+        return make_response(short, 201)
     except Exception:
         return make_response("error", 400)
 
