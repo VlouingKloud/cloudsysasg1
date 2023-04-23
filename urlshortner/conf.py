@@ -14,3 +14,6 @@ HASH_LEN = 4
 ## database path
 #### set to a valid path if enable persistent storage
 DBPATH = None
+
+## auth url
+AUTH_URL = "http://"

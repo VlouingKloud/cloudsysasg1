@@ -1,7 +1,7 @@
 import string
 import re
 from hashlib import shake_128
-
+import urllib3
 from flask import Flask, request, abort, redirect, make_response
 
 import duckdb
@@ -137,6 +137,22 @@ class Shortner:
 # init the Shortner
 shortner = Shortner()
 
+def require_auth(f):
+    def inner(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        if not token:
+            return make_response("forbidden", 403)
+        http = urllib3.PoolManager()
+        headers = {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+                }
+        r = http.request('GET', AUTH_URL, headers=headers)
+        if r.status == 200:
+            return f(*args, **kwargs)
+        else:
+            return make_response("forbidden", 403)
+    return inner
 
 # GET /
 @app.get('/')
@@ -198,6 +214,7 @@ def deleteID(id):
 
 # GET /stat
 @app.get('/stat')
+@require_auth
 def getStat():
     return shortner.stat()
 

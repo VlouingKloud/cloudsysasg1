@@ -116,7 +116,7 @@ def postLogin():
 @app.post("/users/auth")
 def postAuth():
     try:
-        token = request.form['jwt']
+        token = request.headers.get('Authorization')
         if jwt.verifyJWT(token):
             return make_response("ok", 200)
         else:
