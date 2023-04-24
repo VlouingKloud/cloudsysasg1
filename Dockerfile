@@ -8,7 +8,8 @@ RUN pip3 install duckdb Flask urllib3 bcrypt
 
 RUN mkdir /web
 
-COPY url23.conf /web
+COPY url23.conf /etc/nginx/conf.d/url23.conf
+COPY run.sh /web/
 ADD auth /web/auth
 ADD urlshortner /web/urlshortner
-#CMD cd /web && python3 main.py
+CMD cd /web && sh run.sh

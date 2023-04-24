@@ -115,11 +115,86 @@ def testDelete():
     #print(r.status, r.data.decode())
     token = r.data.decode()
 
-    # put, return 201
+    # we post some url, return 201
     headers = {"Authorization": "Bearer " + token}
-    r = http.request("DELETE")
+    r = http.request("POST", shortner, headers = headers, fields = {"url": "https://github.com/VlouingKloud/websysasg1"})
+    assert(r.status == 201)
+    print(r.status, r.data.decode())
 
-def main(n = 20000):
+    short = r.data.decode()
+
+    # delete, return 204
+    headers = {"Authorization": "Bearer " + token}
+    r = http.request("DELETE", shortner + "/" + short, headers=headers)
+    assert(r.status == 204)
+
+    # return 403
+    headers = {"Authorization": "Bearer " + "z.z.z"}
+    r = http.request("DELETE", shortner + "/" + short, headers=headers)
+    assert(r.status == 403)
+    print(r.status, r.data.decode())
+
+def testPut():
+    """ return 200, 403, 404, 400
+    """
+    # login as z
+    fields = {"username": "z", "password": "123"}
+    r = http.request("POST", auth + "/users/login", fields = fields)
+    assert(r.status == 200)
+    #print(r.status, r.data.decode())
+    token = r.data.decode()
+
+    # we post some url, return 201
+    headers = {"Authorization": "Bearer " + token}
+    r = http.request("POST", shortner, headers = headers, fields = {"url": "https://github.com/VlouingKloud/websysasg1"})
+    assert(r.status == 201)
+    print(r.status, r.data.decode())
+
+    short = r.data.decode()
+
+    # put, return 200
+    headers = {"Authorization": "Bearer " + token}
+    r = http.request("PUT", shortner + "/" + short, headers=headers, fields = {"url": "https://urllib3.readthedocs.io/en/stable/"})
+    assert(r.status == 200)
+    print(r.status, r.data.decode())
+
+    headers = {"Authorization": "Bearer " + "z.z.z"}
+    r = http.request("PUT", shortner + "/" + short, headers=headers, fields = {"url": "https://urllib3.readthedocs.io/en/stable/"})
+    assert(r.status == 403)
+    print(r.status, r.data.decode())
+
+def testGet():
+    """ return 200, 403
+    """
+    # login as z
+    fields = {"username": "z", "password": "123"}
+    r = http.request("POST", auth + "/users/login", fields = fields)
+    assert(r.status == 200)
+    #print(r.status, r.data.decode())
+    token = r.data.decode()
+
+    # we post some url, return 201
+    headers = {"Authorization": "Bearer " + token}
+    r = http.request("POST", shortner, headers = headers, fields = {"url": "https://github.com"})
+    assert(r.status == 201)
+    print(r.status, r.data.decode())
+
+    # return 200
+    headers = {"Authorization": "Bearer " + token}
+    r = http.request("GET", shortner, headers=headers)
+    assert(r.status == 200)
+    print(r.status, r.data.decode())
+
+    # return 403
+    headers = {"Authorization": "Bearer " + "z.z.z"}
+    r = http.request("GET", shortner, headers=headers)
+    assert(r.status == 403)
+    print(r.status, r.data.decode())
+
+import os
+import time
+
+def main():
     # lets start with a few real URLs
     urls = ["https://en.wikipedia.org/wiki/URL",
             "https://github.com/VlouingKloud/websysasg1",
@@ -127,9 +202,13 @@ def main(n = 20000):
             "https://urllib3.readthedocs.io/en/stable/",
             "https://www.uva.nl/en",
             "https://app.diagrams.net/"]
-    testPostUsers()
-    testPutUser()
-    testPostLogin()
-    testPostUrl()
+
+    tests = [testPostUsers, testPutUser, testPostLogin, testPostUrl, testDelete, testPut, testGet]
+    for f in tests:
+        print(">>> running ", f.__name__)
+        f()
+        print(">>> okay")
+        input()
+        os.system("clear")
 
 main()
