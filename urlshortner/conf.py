@@ -13,7 +13,16 @@ HASH_LEN = 4
 
 ## database path
 #### set to a valid path if enable persistent storage
-DBPATH = None
+DBFILE = "urlmapping.db"
 
 ## auth url
-AUTH_URL = "http://127.0.0.1:12356/users/auth"
+import sys
+sys.path.append('../')
+from auth import conf as authconf
+AUTH_URL = authconf.ADDR + ":" + str(authconf.PORT) + "/users/auth"
+
+## ip
+ADDR = "0.0.0.0"
+
+## PORT
+PORT = "12357"

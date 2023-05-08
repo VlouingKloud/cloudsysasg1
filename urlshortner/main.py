@@ -7,14 +7,14 @@ import base64
 import json
 from functools import wraps
 
-import duckdb
+import sqlite3
 
 # import all the constants
-from conf import *
+import conf
 
 app = Flask(__name__)
 
-def _genShort(url, size = HASH_LEN):
+def _genShort(url, size = conf.HASH_LEN):
     """private function to generate short ID for a given url.
        basically, it first hash the url and then transform the result to base62
     """
@@ -25,8 +25,8 @@ def _genShort(url, size = HASH_LEN):
     ## now we convert it to base62
     short = ""
     while True:
-        hex, rem = divmod(hex, len(ALPHABET))
-        short += ALPHABET[rem]
+        hex, rem = divmod(hex, len(conf.ALPHABET))
+        short += conf.ALPHABET[rem]
         if hex == 0:
             break
     return short
@@ -52,26 +52,23 @@ def check_url(url):
 class Shortner:
     """ This is the class to manage short urls
     """
-    def __init__(self, filename = None):
+    def __init__(self, filename):
         """ if a filename is provided, persistent storage will be enabled.
         """
-        if filename:
-            self.con = duckdb.connect(filename)
-        else:
-            self.con = duckdb.connect()
+        self.con = sqlite3.connect(filename, check_same_thread=False)
         # an index will be created by setting primary key
-        self.con.sql("CREATE TABLE IF NOT EXISTS urlpair(short varchar primary key, original varchar, count bigint, username varchar);")
+        self.con.execute("CREATE TABLE IF NOT EXISTS urlpair(short varchar primary key, original varchar, count bigint, username varchar);")
 
     def add(self, url, user):
         """ This is for shortening a url (POST /)
             if there is a collision, we simply overwrite the previous one
         """
         short = _genShort(url)
-        result = self.con.sql("select original from urlpair where short = '{}' and username = '{}'".format(short, user)).fetchall()
+        result = self.con.execute("select original from urlpair where short = '{}' and username = '{}'".format(short, user)).fetchall()
         if len(result) == 1:
-            self.con.sql("UPDATE urlpair SET original = '{}', count = 1 WHERE short = '{}' and username = '{}'".format(url, short, user))
+            self.con.execute("UPDATE urlpair SET original = '{}', count = 1 WHERE short = '{}' and username = '{}'".format(url, short, user))
         elif len(result) == 0:
-            self.con.sql("INSERT INTO urlpair VALUES ('{}', '{}', 1, '{}')".format(short, url, user))
+            self.con.execute("INSERT INTO urlpair VALUES ('{}', '{}', 1, '{}')".format(short, url, user))
         else:
             raise Exception("got more than one results")
         return short
@@ -79,9 +76,9 @@ class Shortner:
     def get(self, short):
         """ This is for get /:id
         """
-        result = self.con.sql("select original from urlpair where short = '{}'".format(short)).fetchall()
+        result = self.con.execute("select original from urlpair where short = '{}'".format(short)).fetchall()
         if len(result) == 1:
-            self.con.sql("UPDATE urlpair SET count = count + 1 WHERE short = '{}'".format(short))
+            self.con.execute("UPDATE urlpair SET count = count + 1 WHERE short = '{}'".format(short))
             return result[0][0]
         elif len(result) == 0:
             return None
@@ -93,9 +90,9 @@ class Shortner:
         When the given id is in the database, it will change the mapping to the new url
         otherwise, it will return None
         """
-        result = self.con.sql("select original from urlpair where short = '{}' and username = '{}'".format(short, user)).fetchall()
+        result = self.con.execute("select original from urlpair where short = '{}' and username = '{}'".format(short, user)).fetchall()
         if len(result) == 1:
-            self.con.sql("UPDATE urlpair SET original = '{}', count = 0 WHERE short = '{}' and username = '{}'".format(url, short, user))
+            self.con.execute("UPDATE urlpair SET original = '{}', count = 0 WHERE short = '{}' and username = '{}'".format(url, short, user))
             return url
         elif len(result) == 0:
             return None
@@ -105,9 +102,9 @@ class Shortner:
     def delete(self, short, user):
         """ This is for delete /:id
         """
-        result = self.con.sql("select original from urlpair where short = '{}' and username = '{}'".format(short, user)).fetchall()
+        result = self.con.execute("select original from urlpair where short = '{}' and username = '{}'".format(short, user)).fetchall()
         if len(result) == 1:
-            self.con.sql("delete from urlpair where short = '{}' and username = '{}'".format(short, user))
+            self.con.execute("delete from urlpair where short = '{}' and username = '{}'".format(short, user))
             return result[0][0]
         elif len(result) == 0:
             return None
@@ -117,13 +114,13 @@ class Shortner:
     def clear(self, user):
         """ this is for DELETE /, which will clear the table.
         """
-        self.con.sql("delete from urlpair where username = '{}'".format(user))
+        self.con.execute("delete from urlpair where username = '{}'".format(user))
         return True
 
     def getAllKeys(self, user):
         """ This is for GET /, which will return all the short IDs.
         """
-        result = self.con.sql("select short from urlpair where username = '{}'".format(user)).fetchall()
+        result = self.con.execute("select short from urlpair where username = '{}'".format(user)).fetchall()
         # we need to flat the result.
         flat = [key for z in result for key in z]
         return " ".join(flat)
@@ -131,14 +128,14 @@ class Shortner:
     def stat(self, n = None):
         """ This is for GET /stat and GET /stat/n
         """
-        result = self.con.sql("select short, original, count, user from urlpair order by count desc;").fetchall()
+        result = self.con.execute("select short, original, count, user from urlpair order by count desc;").fetchall()
         if n:
             result = result[:n]
         resp = " \n".join("{}=>{}: {}".format(i[0], i[1], i[2]) for i in result)
         return resp
 
 # init the Shortner
-shortner = Shortner()
+shortner = Shortner(conf.DBFILE)
 
 # require_auth, this function will be used as
 # a decorator, and will decorate all the handlers 
@@ -154,7 +151,7 @@ def require_auth(f):
                 'Authorization': token,
                 'Content-Type': 'application/json'
                 }
-        r = http.request('GET', AUTH_URL, headers=headers)
+        r = http.request('GET', conf.AUTH_URL, headers=headers)
         if r.status == 200:
             return f(*args, **kwargs)
         else:
@@ -250,4 +247,4 @@ def getNStat(n):
 
 if __name__ == '__main__':
     # listen not only the localhost
-    app.run(host="0.0.0.0", port = 12345)
+    app.run(host= conf.ADDR, port = conf.PORT)
