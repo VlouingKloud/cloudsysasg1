@@ -6,8 +6,7 @@ from flask import Flask, request, abort, redirect, make_response
 import base64
 import json
 from functools import wraps
-
-import sqlite3
+import psycopg2
 
 # import all the constants
 import conf
@@ -52,31 +51,41 @@ def check_url(url):
 class Shortner:
     """ This is the class to manage short urls
     """
-    def __init__(self, filename):
+    def __init__(self, host, database, user, password):
         """ if a filename is provided, persistent storage will be enabled.
         """
-        self.con = sqlite3.connect(filename, check_same_thread=False)
-        # an index will be created by setting primary key
+        self.conn = psycopg2.connect(
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+        )
+
+        self.con = self.conn.cursor()
         self.con.execute("CREATE TABLE IF NOT EXISTS urlpair(short varchar primary key, original varchar, count bigint, username varchar);")
+        self.conn.commit()
 
     def add(self, url, user):
         """ This is for shortening a url (POST /)
             if there is a collision, we simply overwrite the previous one
         """
         short = _genShort(url)
-        result = self.con.execute("select original from urlpair where short = '{}' and username = '{}'".format(short, user)).fetchall()
+        self.con.execute("select original from urlpair where short = '{}' and username = '{}'".format(short, user))
+        result = self.con.fetchall()
         if len(result) == 1:
             self.con.execute("UPDATE urlpair SET original = '{}', count = 1 WHERE short = '{}' and username = '{}'".format(url, short, user))
         elif len(result) == 0:
             self.con.execute("INSERT INTO urlpair VALUES ('{}', '{}', 1, '{}')".format(short, url, user))
         else:
             raise Exception("got more than one results")
+        self.conn.commit()
         return short
 
     def get(self, short):
         """ This is for get /:id
         """
-        result = self.con.execute("select original from urlpair where short = '{}'".format(short)).fetchall()
+        self.con.execute("select original from urlpair where short = '{}'".format(short))
+        result = self.con.fetchall()
         if len(result) == 1:
             self.con.execute("UPDATE urlpair SET count = count + 1 WHERE short = '{}'".format(short))
             return result[0][0]
@@ -90,9 +99,11 @@ class Shortner:
         When the given id is in the database, it will change the mapping to the new url
         otherwise, it will return None
         """
-        result = self.con.execute("select original from urlpair where short = '{}' and username = '{}'".format(short, user)).fetchall()
+        self.con.execute("select original from urlpair where short = '{}' and username = '{}'".format(short, user))
+        result = self.con.fetchall()
         if len(result) == 1:
             self.con.execute("UPDATE urlpair SET original = '{}', count = 0 WHERE short = '{}' and username = '{}'".format(url, short, user))
+            self.conn.commit()
             return url
         elif len(result) == 0:
             return None
@@ -102,9 +113,11 @@ class Shortner:
     def delete(self, short, user):
         """ This is for delete /:id
         """
-        result = self.con.execute("select original from urlpair where short = '{}' and username = '{}'".format(short, user)).fetchall()
+        self.con.execute("select original from urlpair where short = '{}' and username = '{}'".format(short, user))
+        result = self.con.fetchall()
         if len(result) == 1:
             self.con.execute("delete from urlpair where short = '{}' and username = '{}'".format(short, user))
+            self.conn.commit()
             return result[0][0]
         elif len(result) == 0:
             return None
@@ -115,12 +128,14 @@ class Shortner:
         """ this is for DELETE /, which will clear the table.
         """
         self.con.execute("delete from urlpair where username = '{}'".format(user))
+        self.conn.commit()
         return True
 
     def getAllKeys(self, user):
         """ This is for GET /, which will return all the short IDs.
         """
-        result = self.con.execute("select short from urlpair where username = '{}'".format(user)).fetchall()
+        self.con.execute("select short from urlpair where username = '{}'".format(user))
+        result = self.con.fetchall()
         # we need to flat the result.
         flat = [key for z in result for key in z]
         return " ".join(flat)
@@ -128,14 +143,15 @@ class Shortner:
     def stat(self, n = None):
         """ This is for GET /stat and GET /stat/n
         """
-        result = self.con.execute("select short, original, count, user from urlpair order by count desc;").fetchall()
+        self.con.execute("select short, original, count, user from urlpair order by count desc;")
+        result = self.con.fetchall()
         if n:
             result = result[:n]
         resp = " \n".join("{}=>{}: {}".format(i[0], i[1], i[2]) for i in result)
         return resp
 
 # init the Shortner
-shortner = Shortner(conf.DBFILE)
+shortner = Shortner(conf.DBADDR, conf.DATABASE, conf.DBUSER, conf.DBPASSWORD)
 
 # require_auth, this function will be used as
 # a decorator, and will decorate all the handlers 

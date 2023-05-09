@@ -1,6 +1,6 @@
 from flask import Flask, request, abort, redirect, make_response
 import bcrypt
-import sqlite3
+import psycopg2
 
 import jwt
 import conf
@@ -10,9 +10,16 @@ app = Flask(__name__)
 class UserMgr:
     """ This is the class to manage users
     """
-    def __init__(self, filename):
-        self.con = sqlite3.connect(filename, check_same_thread=False)
+    def __init__(self, host, database, user, password):
+        self.conn = psycopg2.connect(
+                host=host,
+                database=database,
+                user=user,
+                password=password,
+        )
+        self.con = self.conn.cursor()
         self.con.execute("CREATE TABLE IF NOT EXISTS users(name varchar primary key, password varchar);")
+        self.conn.commit()
 
     def create(self, username, password):
         """ create a new user
@@ -20,13 +27,15 @@ class UserMgr:
             return False if there is duplicate
         """
         sql = "SELECT COUNT(*) FROM users WHERE name='{}'".format(username)
-        if self.con.execute(sql).fetchone()[0] > 0:
+        self.con.execute(sql)
+        if self.con.fetchone()[0] > 0:
             return False
         password = password.encode('utf-8')
         hashed = bcrypt.hashpw(password, bcrypt.gensalt())
 
         sql = "INSERT INTO users VALUES ('{}', '{}')".format(username, hashed.decode("utf-8"))
         self.con.execute(sql)
+        self.conn.commit()
         return True
 
     def update(self, username, old, new):
@@ -35,7 +44,8 @@ class UserMgr:
             anyother cases will return False
         """
         sql = "SELECT password FROM users WHERE name = '{}'".format(username)
-        result = self.con.execute(sql).fetchall()
+        self.con.execute(sql)
+        result = self.con.fetchall()
         if len(result) != 1:
             return False
         if not bcrypt.checkpw(old.encode("utf-8"), result[0][0].encode("utf-8")):
@@ -45,6 +55,7 @@ class UserMgr:
 
         sql = "UPDATE users SET password = '{}' WHERE name = '{}'".format(hashed.decode("utf-8"), username)
         self.con.execute(sql)
+        self.conn.commit()
         return True
 
     def login(self, username, password):
@@ -53,7 +64,8 @@ class UserMgr:
             otherwise will return False
         """
         sql = "SELECT password FROM users WHERE name = '{}'".format(username)
-        result = self.con.execute(sql).fetchall()
+        self.con.execute(sql)
+        result = self.con.fetchall()
         if len(result) != 1:
             return False
         if not bcrypt.checkpw(password.encode("utf-8"), result[0][0].encode("utf-8")):
@@ -62,7 +74,7 @@ class UserMgr:
 
 
 # init the UserMgr
-umgr = UserMgr(conf.DBFILE)
+umgr = UserMgr(conf.DBADDR, conf.DATABASE, conf.DBUSER, conf.DBPASSWORD)
 
 
 # POST /users
@@ -76,7 +88,8 @@ def postUsers():
             return make_response("user {} created".format(user), 201)
         else:
             return make_response("duplicate", 409)
-    except Exception:
+    except Exception as e:
+        print(e, flush = True)
         abort(400)
 
 
@@ -92,7 +105,8 @@ def putUsers():
             return make_response("updated password for {}".format(user), 200)
         else:
             return make_response("forbidden", 403)
-    except Exception:
+    except Exception as e:
+        print(e, flush = True)
         abort(400)
 
 
@@ -122,6 +136,10 @@ def getAuth():
             return make_response("forbidden", 403)
     except Exception:
         return make_response("forbidden", 403)
+
+@app.get("/srvstatus")
+def getSrvStatus():
+    return make_response("ok", 200)
 
 if __name__ == "__main__":
     app.run(host = conf.ADDR, port = conf.PORT)

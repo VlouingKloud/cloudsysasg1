@@ -11,9 +11,11 @@ ALPHABET = string.ascii_letters + string.digits
 ## TODO: is it possible to make this dynamic and adaptive?
 HASH_LEN = 4
 
-## database path
-#### set to a valid path if enable persistent storage
-DBFILE = "urlmapping.db"
+## database configs
+DBADDR = "db"
+DATABASE = None
+DBUSER = "postgres"
+DBPASSWORD = "password"
 
 ## auth url
 AUTH_URL = "http://" + "auth" + ":" + "12356" + "/users/auth"

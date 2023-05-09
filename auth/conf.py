@@ -1,8 +1,11 @@
 # this is the identifier of our app, currently not used:)
 APP_NAME = "AUTH"
 
-# database filename
-DBFILE = "auth.sqllite"
+# database configurations
+DBADDR = "db"
+DATABASE = None
+DBUSER = "postgres"
+DBPASSWORD = "password"
 
 # ip, default to 0.0.0.0
 ADDR = "0.0.0.0"
