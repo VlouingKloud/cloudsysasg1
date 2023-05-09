@@ -16,10 +16,7 @@ HASH_LEN = 4
 DBFILE = "urlmapping.db"
 
 ## auth url
-import sys
-sys.path.append('../')
-from auth import conf as authconf
-AUTH_URL = authconf.ADDR + ":" + str(authconf.PORT) + "/users/auth"
+AUTH_URL = "http://" + "auth" + ":" + "12356" + "/users/auth"
 
 ## ip
 ADDR = "0.0.0.0"

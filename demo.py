@@ -9,8 +9,8 @@ import urllib3
 http = urllib3.PoolManager()
 
 # server address
-shortner = "http://172.17.0.3:12357"
-auth = "http://172.17.0.3:12356"
+shortner = "http://172.22.0.3:12357"
+auth = "http://172.22.0.2:12356"
 
 def testPostUsers():
     """ return 201 or 409
