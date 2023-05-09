@@ -6,6 +6,8 @@ services:
       - myappnet
     environment:
       POSTGRES_PASSWORD: password
+    volumes:
+      - db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -39,3 +41,5 @@ services:
         condition: service_healthy
 networks:
   myappnet:
+volumes:
+  db_data:
