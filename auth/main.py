@@ -18,6 +18,9 @@ for environ in environs:
         filename = "/run/secrets/" + environ
     else:
         exit(1)
+    if environ == 'JWT_KEY_FILE':
+        key = filename
+        continue
     with open(filename, 'r') as f:
         if environ == 'JWT_KEY_FILE':
             key = filename
