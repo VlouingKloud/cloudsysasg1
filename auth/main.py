@@ -2,10 +2,33 @@ from flask import Flask, request, abort, redirect, make_response
 import bcrypt
 import psycopg2
 
+import os
+
 import jwt
 import conf
 
 app = Flask(__name__)
+
+# read the sensitive information
+environs = ["JWT_KEY_FILE", "DB_CONFIG_FILE"]
+for environ in environs:
+    if environ in os.environ:
+        filename = os.environ[environ]
+    elif os.path.isfile("/run/secrets/" + environ):
+        filename = "/run/secrets/" + environ
+    else:
+        exit(1)
+    with open(filename, 'r') as f:
+        if environ == 'JWT_KEY_FILE':
+            key = f.read().strip()
+        elif environ == 'DB_CONFIG_FILE':
+            db_config = {}
+            for line in f:
+                line = line.strip().split("=")
+                if len(line) != 2:
+                    exit(2)
+                db_config[line[0].strip()] = line[1].strip()
+        db_config['DATABASE'] = None
 
 class UserMgr:
     """ This is the class to manage users
@@ -70,11 +93,11 @@ class UserMgr:
             return False
         if not bcrypt.checkpw(password.encode("utf-8"), result[0][0].encode("utf-8")):
             return False
-        return jwt.createJWT(username)
+        return jwt.createJWT(username, key = key)
 
 
 # init the UserMgr
-umgr = UserMgr(conf.DBADDR, conf.DATABASE, conf.DBUSER, conf.DBPASSWORD)
+umgr = UserMgr(db_config['DBADDR'], db_config['DATABASE'], db_config['DBUSER'], db_config['DBPASSWORD'])
 
 
 # POST /users
@@ -130,7 +153,7 @@ def getAuth():
         token = request.headers.get('Authorization')
         if "Bearer " in token:
             token = token.split(' ')[1]
-        if jwt.verifyJWT(token):
+        if jwt.verifyJWT(token, key):
             return make_response("ok", 200)
         else:
             return make_response("forbidden", 403)

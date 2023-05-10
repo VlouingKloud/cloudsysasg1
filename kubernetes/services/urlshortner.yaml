@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: urlshortner-service
+spec:
+  selector:
+    app: urlshortner-service
+  ports:
+  - name: http
+    port: 12357
+    targetPort: 12357
+

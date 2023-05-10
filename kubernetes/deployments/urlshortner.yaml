@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urlshortner-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: urlshortner
+  template:
+    metadata:
+      labels:
+        app: urlshortner
+    spec:
+      containers:
+      - name: urlshortner-container
+        image: honestliarisme/websysurl
+        ports:
+        - containerPort: 12357
+

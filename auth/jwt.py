@@ -4,10 +4,7 @@ import hashlib
 import json
 import time
 
-# the key used for generating the signature
-KEY = "strongkey"
-
-def createJWT(user, period = 30 * 60):
+def createJWT(user, key, period = 30 * 60):
     """ create a new JWT, by default the token will be expired after 30min
     """
     # construct the header and payload part of a JWT
@@ -20,12 +17,12 @@ def createJWT(user, period = 30 * 60):
 
     # now we create the signature
     temp = enc_header + b"." + enc_payload
-    sig = hmac.new(KEY.encode('utf-8'), temp, hashlib.sha256).digest()
+    sig = hmac.new(key.encode('utf-8'), temp, hashlib.sha256).digest()
     enc_sig = base64.urlsafe_b64encode(sig).rstrip(b'=')
 
     return (temp + b"." + enc_sig).decode("utf-8")
 
-def verifyJWT(jwt):
+def verifyJWT(jwt, key):
     """ verify if a JWT is valid,
         raise an exception if invalid
         return False if expired
@@ -40,7 +37,7 @@ def verifyJWT(jwt):
 
     # calculate the expected signature
     temp = enc_header + "." + enc_payload
-    sig = hmac.new(KEY.encode('utf-8'), temp.encode("utf-8"), hashlib.sha256).digest()
+    sig = hmac.new(key.encode('utf-8'), temp.encode("utf-8"), hashlib.sha256).digest()
     expected_sig = base64.urlsafe_b64encode(sig).rstrip(b'=')
 
     # check the signature

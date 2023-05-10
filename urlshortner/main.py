@@ -1,5 +1,6 @@
 import string
 import re
+import os
 from hashlib import shake_128
 import urllib3
 from flask import Flask, request, abort, redirect, make_response
@@ -10,6 +11,26 @@ import psycopg2
 
 # import all the constants
 import conf
+
+# read secrets
+environs = ["DB_CONFIG_FILE"]
+for environ in environs:
+    if environ in os.environ:
+        filename = os.environ[environ]
+    elif os.path.isfile("/run/secrets/" + environ):
+        filename = "/run/secrets/" + environ
+    else:
+        exit(1)
+    with open(filename, 'r') as f:
+        if environ == 'DB_CONFIG_FILE':
+            db_config = {}
+            for line in f:
+                line = line.strip().split("=")
+                if len(line) != 2:
+                    exit(2)
+                db_config[line[0].strip()] = line[1].strip()
+        db_config['DATABASE'] = None
+
 
 app = Flask(__name__)
 
@@ -151,7 +172,7 @@ class Shortner:
         return resp
 
 # init the Shortner
-shortner = Shortner(conf.DBADDR, conf.DATABASE, conf.DBUSER, conf.DBPASSWORD)
+shortner = Shortner(db_config['DBADDR'], db_config['DATABASE'], db_config['DBUSER'], db_config['DBPASSWORD'])
 
 # require_auth, this function will be used as
 # a decorator, and will decorate all the handlers 
