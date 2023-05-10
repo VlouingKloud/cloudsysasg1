@@ -13,28 +13,10 @@ import psycopg2
 import conf
 
 # read secrets
-environs = ["DB_CONFIG_FILE"]
-for environ in environs:
-    if environ in os.environ:
-        filename = os.environ[environ]
-    elif os.path.isfile("/run/secrets/" + environ):
-        filename = "/run/secrets/" + environ
-    else:
-        exit(1)
-    if environ == 'JWT_KEY_FILE':
-        key = filename
-        continue
-    with open(filename, 'r') as f:
-        if environ == 'DB_CONFIG_FILE':
-            db_config = {}
-            lines = f.read().strip().split(' ')
-            for line in lines:
-                line = line.strip().split("=")
-                if len(line) != 2:
-                    exit(2)
-                db_config[line[0].strip()] = line[1].strip()
-        db_config['DATABASE'] = None
-
+db_config = {}
+db_config['DATABASE'] = None
+for k in ["DBUSER", "DBADDR", "DBPASSWORD"]:
+    db_config[k] = os.environ[k]
 
 app = Flask(__name__)
 
