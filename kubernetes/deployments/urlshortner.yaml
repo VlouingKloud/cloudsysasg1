@@ -22,7 +22,7 @@ spec:
         - containerPort: 12357
         volumeMounts:
           - name: dbconfig
-            mountPath: /run/secrets/dbconfig
+            mountPath: /run/secrets/
             readOnly: true
       volumes:
         - name: dbconfig
