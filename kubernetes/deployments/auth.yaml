@@ -16,10 +16,19 @@ spec:
       - name: auth-container
         image: honestliarisme/websysauth:latest
         env:
-        - name: JWT_KEY_FILE
-          value: /run/secrets/jwtkey
+        - name: JWT_KEY
+          value: strongkey
         - name: DB_CONFIG_FILE
           value: /run/secrets/dbconfig
         ports:
         - containerPort: 12356
+        volumeMounts:
+          - name: dbconfig
+            mountPath: /run/secrets/dbconfig
+            readOnly: true
+        volumes:
+          - name: dbconfig
+        secret:
+          secretName: dbconfig
+
 

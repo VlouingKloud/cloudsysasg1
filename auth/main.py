@@ -10,7 +10,7 @@ import conf
 app = Flask(__name__)
 
 # read the sensitive information
-environs = ["JWT_KEY_FILE", "DB_CONFIG_FILE"]
+environs = ["JWT_KEY", "DB_CONFIG_FILE"]
 for environ in environs:
     if environ in os.environ:
         filename = os.environ[environ]
@@ -20,7 +20,7 @@ for environ in environs:
         exit(1)
     with open(filename, 'r') as f:
         if environ == 'JWT_KEY_FILE':
-            key = f.read().strip()
+            key = filename
         elif environ == 'DB_CONFIG_FILE':
             db_config = {}
             lines = f.read().strip().split(' ')
