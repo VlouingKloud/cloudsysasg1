@@ -15,6 +15,11 @@ spec:
       containers:
       - name: auth-container
         image: honestliarisme/websysauth
+        env:
+        - name: JWT_KEY_FILE
+          value: /run/secrets/jwtkey
+        - name: DB_CONFIG_FILE
+          value: /run/secrets/dbconfig
         ports:
         - containerPort: 12356
 

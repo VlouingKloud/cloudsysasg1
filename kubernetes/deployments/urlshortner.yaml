@@ -15,6 +15,9 @@ spec:
       containers:
       - name: urlshortner-container
         image: honestliarisme/websysurl
+        env:
+        - name: DB_CONFIG_FILE
+          value: /run/secrets/dbconfig
         ports:
         - containerPort: 12357
 
