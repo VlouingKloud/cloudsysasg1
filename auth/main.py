@@ -23,7 +23,8 @@ for environ in environs:
             key = f.read().strip()
         elif environ == 'DB_CONFIG_FILE':
             db_config = {}
-            for line in f:
+            lines = f.read().strip().split(' ')
+            for line in lines:
                 line = line.strip().split("=")
                 if len(line) != 2:
                     exit(2)

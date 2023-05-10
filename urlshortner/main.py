@@ -24,7 +24,8 @@ for environ in environs:
     with open(filename, 'r') as f:
         if environ == 'DB_CONFIG_FILE':
             db_config = {}
-            for line in f:
+            lines = f.read().strip().split(' ')
+            for line in lines:
                 line = line.strip().split("=")
                 if len(line) != 2:
                     exit(2)
