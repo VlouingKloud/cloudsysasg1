@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: auth-container
-        image: honestliarisme/websysauth
+        image: honestliarisme/websysauth:latest
         env:
         - name: JWT_KEY_FILE
           value: /run/secrets/jwtkey

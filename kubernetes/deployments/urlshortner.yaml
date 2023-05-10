@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: urlshortner-container
-        image: honestliarisme/websysurl
+        image: honestliarisme/websysurl:latest
         env:
         - name: DB_CONFIG_FILE
           value: /run/secrets/dbconfig
