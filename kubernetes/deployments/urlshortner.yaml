@@ -24,7 +24,7 @@ spec:
           - name: dbconfig
             mountPath: /run/secrets/dbconfig
             readOnly: true
-        volumes:
-          - name: dbconfig
-            secret:
-              secretName: dbconfig
+      volumes:
+        - name: dbconfig
+          secret:
+            secretName: dbconfig
