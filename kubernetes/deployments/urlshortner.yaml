@@ -17,12 +17,12 @@ spec:
         image: honestliarisme/websysurl:latest
         env:
         - name: DB_CONFIG_FILE
-          value: /run/secrets/dbconfig
+          value: /run/secrets/conf/dbconfig
         ports:
         - containerPort: 12357
         volumeMounts:
           - name: dbconfig
-            mountPath: /run/secrets/
+            mountPath: /run/secrets/conf
             readOnly: true
       volumes:
         - name: dbconfig
