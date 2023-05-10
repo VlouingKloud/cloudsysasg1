@@ -13,7 +13,6 @@ spec:
           service:
             name: auth-service
             port:
-              name: http
               number: 80
       - path: /
         pathType: Prefix
@@ -21,6 +20,5 @@ spec:
           service:
             name: urlshortner-service
             port:
-              name: http
               number: 80
 
