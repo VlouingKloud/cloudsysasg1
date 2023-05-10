@@ -4,9 +4,9 @@ metadata:
   name: urlshortner-service
 spec:
   selector:
-    app: urlshortner-service
+    app: urlshortner
   ports:
-  - name: http
-    port: 12357
-    targetPort: 12357
-
+    - protocol: TCP
+      port: 12357
+      targetPort: 12357
+  type: NodePort

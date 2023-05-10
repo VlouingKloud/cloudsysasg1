@@ -4,9 +4,9 @@ metadata:
   name: auth-service
 spec:
   selector:
-    app: auth-service
+    app: auth
   ports:
-  - name: http
-    port: 12356
-    targetPort: 12356
-
+    - protocol: TCP
+      port: 12356
+      targetPort: 12356
+  type: NodePort
