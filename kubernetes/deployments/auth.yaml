@@ -18,8 +18,12 @@ spec:
         env:
         - name: JWT_KEY
           value: strongkey
-        - name: DB_CONFIG_FILE
-          value: /webapp/dbconfig
+        - name: DBADDR
+          value: http://db-service/
+        - name: DBUSER
+          value: postgres
+        - name: DBPASSWORD
+          value: password
         ports:
         - containerPort: 12356
         volumeMounts:
