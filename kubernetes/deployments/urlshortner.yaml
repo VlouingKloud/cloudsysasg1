@@ -26,5 +26,5 @@ spec:
             readOnly: true
         volumes:
           - name: dbconfig
-        secret:
-          secretName: dbconfig
+            secret:
+              secretName: dbconfig
