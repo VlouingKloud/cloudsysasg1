@@ -1,5 +1,5 @@
 #!/bin/bash
 #
-echo "strongkey" | docker secret create jwtkey -
+kubectl create secret generic my-secret --from-literal=strongkey
 
-echo "DBADDR=http://db-service/ DBUSER=postgres DBPASSWORD=password" | docker secret create dbconfig -
+kubectl create secret generic my-secret --from-literal=DBADDR=http://db-service/\x20DBUSER=postgres\x20DBPASSWORD=password
