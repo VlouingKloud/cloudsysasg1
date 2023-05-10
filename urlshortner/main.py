@@ -261,6 +261,10 @@ def getStat():
 def getNStat(n):
     return shortner.stat(int(n))
 
+@app.get("/srvstatus")
+def getSrvStatus():
+    return make_response("ok", 200)
+
 if __name__ == '__main__':
     # listen not only the localhost
     app.run(host= conf.ADDR, port = conf.PORT)
