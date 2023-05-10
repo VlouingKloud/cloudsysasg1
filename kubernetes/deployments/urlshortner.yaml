@@ -16,10 +16,8 @@ spec:
       - name: urlshortner-container
         image: honestliarisme/websysurl:latest
         env:
-        - name: DB_CONFIG_FILE
-          value: /run/secrets/conf/dbconfig
         - name: DBADDR
-          value: db-service/
+          value: db-service
         - name: DBUSER
           value: postgres
         - name: DBPASSWORD
