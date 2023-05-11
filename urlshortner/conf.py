@@ -12,7 +12,7 @@ ALPHABET = string.ascii_letters + string.digits
 HASH_LEN = 4
 
 ## auth url
-AUTH_URL = "auth-service" + "/users/auth"
+AUTH_URL = "http://auth-service:12356" + "/users/auth"
 
 ## ip
 ADDR = "0.0.0.0"
