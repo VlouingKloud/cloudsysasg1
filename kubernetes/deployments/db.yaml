@@ -28,5 +28,5 @@ spec:
       volumes:
       - name: postgres-storage
         hostPath:
-          path: /home/student204/appdata
-          type: Directory
+          path: /appdatav1
+          type: DirectoryOrCreate
