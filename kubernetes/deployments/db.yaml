@@ -12,6 +12,8 @@ spec:
       labels:
         app: db
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: kubeclass-203
       containers:
       - name: db-container
         image: postgres
